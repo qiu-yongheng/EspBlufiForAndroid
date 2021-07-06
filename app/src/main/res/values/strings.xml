@@ -70,4 +70,10 @@
     <string name="settings_upgrade_dialog_title">Discover new version</string>
     <string name="settings_upgrade_dialog_message">Click [Upgrade] to download APK</string>
     <string name="settings_upgrade_dialog_upgrade">Upgrade</string>
+    <string name="settings_ble_data_output_hint">导出路径</string>
+    <string name="settings_ble_data_output_key">settings_ble_data_output_key</string>
+    <string name="settings_ble_data_output_title">BLE data output</string>
+    <string name="settings_ble_data_delete_hint">删除所有数据</string>
+    <string name="settings_ble_data_delete_key">settings_ble_data_delete_key</string>
+    <string name="settings_ble_data_delete_title">BLE data delete</string>
 </resources>

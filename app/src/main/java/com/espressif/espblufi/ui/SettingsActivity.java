@@ -1,5 +1,6 @@
 package com.espressif.espblufi.ui;
 
+import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -16,19 +17,28 @@ import androidx.preference.Preference;
 import androidx.preference.PreferenceCategory;
 import androidx.preference.PreferenceFragmentCompat;
 
+import com.blankj.utilcode.util.ToastUtils;
 import com.espressif.espblufi.R;
 import com.espressif.espblufi.app.BaseActivity;
 import com.espressif.espblufi.app.BlufiApp;
 import com.espressif.espblufi.constants.BlufiConstants;
 import com.espressif.espblufi.constants.SettingsConstants;
+import com.espressif.espblufi.db.RecordProvider;
 import com.espressif.espblufi.task.BlufiAppReleaseTask;
+import com.espressif.espblufi.util.DialogUtils;
+import com.espressif.espblufi.util.FileUtils;
+import com.yanzhenjie.permission.Action;
+import com.yanzhenjie.permission.AndPermission;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import blufi.espressif.BlufiClient;
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import kotlin.Unit;
+import kotlin.jvm.functions.Function0;
 
 public class SettingsActivity extends BaseActivity {
 
@@ -47,10 +57,14 @@ public class SettingsActivity extends BaseActivity {
         private static final String KEY_MTU_LENGTH = SettingsConstants.PREF_SETTINGS_KEY_MTU_LENGTH;
         private static final String KEY_BLE_PREFIX = SettingsConstants.PREF_SETTINGS_KEY_BLE_PREFIX;
 
+        String[] permissions = {Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE};
+
         private BlufiApp mApp;
 
         private EditTextPreference mMtuPref;
         private EditTextPreference mBlePrefixPref;
+        private Preference mDataOutput;
+        private Preference mDataDelete;
 
         private Preference mVersionCheckPref;
         private volatile BlufiAppReleaseTask.ReleaseInfo mAppLatestRelease;
@@ -88,6 +102,18 @@ public class SettingsActivity extends BaseActivity {
             mBlePrefixPref.setSummary(blePrefix);
 
             mVersionCheckPref = findPreference(R.string.settings_upgrade_check_key);
+
+            mDataOutput = findPreference(R.string.settings_ble_data_output_key);
+            mDataOutput.setSummary("导出路径: " + FileUtils.outputPath);
+            mDataDelete = findPreference(R.string.settings_ble_data_delete_key);
+            updateRecordSize();
+        }
+
+        private void updateRecordSize() {
+            int recordSize = RecordProvider.INSTANCE.getRecordSize();
+            if (mDataDelete != null) {
+                mDataDelete.setSummary(recordSize == 0 ? "暂无配网记录" : "配网记录: " + recordSize + "条");
+            }
         }
 
         public <T extends Preference> T findPreference(@StringRes int res) {
@@ -116,9 +142,32 @@ public class SettingsActivity extends BaseActivity {
                     downloadLatestRelease();
                 }
                 return true;
+            } else if (preference == mDataOutput) {
+                DialogUtils.INSTANCE.showOutputExcelDialog(getContext(), () -> {
+                    outputExcel();
+                    return null;
+                });
+                return true;
+            } else if (preference == mDataDelete) {
+                DialogUtils.INSTANCE.showDeleteDialog(getContext());
+                return true;
             }
 
             return super.onPreferenceTreeClick(preference);
+        }
+
+        private void outputExcel() {
+            AndPermission.with(this)
+                    .runtime()
+                    .permission(permissions)
+                    .onGranted(data -> {
+
+                        FileUtils.exportExcel(getContext());
+                    })
+                    .onDenied(data -> {
+                        ToastUtils.showLong("导出Excel需要存储权限!");
+                    })
+                    .start();
         }
 
         @Override
@@ -187,5 +236,5 @@ public class SettingsActivity extends BaseActivity {
             intent.setData(uri);
             startActivity(intent);
         }
-    }  // Fragment end
-} // Activity end
+    }
+}

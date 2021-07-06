@@ -71,4 +71,10 @@
     <string name="settings_upgrade_dialog_title">发现新版本</string>
     <string name="settings_upgrade_dialog_message">点击[升级]下载APK</string>
     <string name="settings_upgrade_dialog_upgrade">升级</string>
+    <string name="settings_ble_data_output_hint">导出路径</string>
+    <string name="settings_ble_data_output_key">settings_ble_data_output_key</string>
+    <string name="settings_ble_data_output_title">数据导出</string>
+    <string name="settings_ble_data_delete_hint">删除所有数据</string>
+    <string name="settings_ble_data_delete_key">settings_ble_data_delete_key</string>
+    <string name="settings_ble_data_delete_title">清空数据</string>
 </resources>

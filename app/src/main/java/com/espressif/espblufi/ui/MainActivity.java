@@ -54,12 +54,13 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_BLUFI = 0x10;
 
     private static final int MENU_SETTINGS = 0x01;
+    private static final int MENU_DATA_MANAGER = 0x02;
 
     private final BlufiLog mLog = new BlufiLog(getClass());
 
     private SwipeRefreshLayout mRefreshLayout;
 
-    private RecyclerView mRecyclerView;
+    private RecyclerView mRvDevice;
     private List<ScanResult> mBleList;
     private BleAdapter mBleAdapter;
 
@@ -76,35 +77,39 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_activity);
         Toolbar toolbar = findViewById(R.id.toolbar);
+        toolbar.setTitle("");
         setSupportActionBar(toolbar);
 
         mThreadPool = Executors.newSingleThreadExecutor();
 
+        // 下拉刷新
         mRefreshLayout = findViewById(R.id.refresh_layout);
         mRefreshLayout.setColorSchemeResources(R.color.colorAccent);
         mRefreshLayout.setOnRefreshListener(this::scan);
 
-        mRecyclerView = findViewById(R.id.recycler_view);
+        // 设备列表
+        mRvDevice = findViewById(R.id.rv_device);
         mBleList = new LinkedList<>();
         mBleAdapter = new BleAdapter();
-        mRecyclerView.setAdapter(mBleAdapter);
+        mRvDevice.setAdapter(mBleAdapter);
 
         mDeviceMap = new HashMap<>();
         mScanCallback = new ScanCallback();
 
+        // 权限申请
         ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_PERMISSION);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
         stopScan();
         mThreadPool.shutdownNow();
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         int size = permissions.length;
         for (int i = 0; i < size; ++i) {
             String permission = permissions[i];
@@ -112,7 +117,7 @@ public class MainActivity extends AppCompatActivity {
 
             if (permission.equals(Manifest.permission.ACCESS_FINE_LOCATION)) {
                 if (grant == PackageManager.PERMISSION_GRANTED) {
-                    mRefreshLayout.setRefreshing(true);
+                    // 开始扫描
                     scan();
                 }
             }
@@ -122,17 +127,17 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_BLUFI) {
-            mRefreshLayout.setRefreshing(true);
+//            mRefreshLayout.setRefreshing(true);
             scan();
             return;
         }
-
         super.onActivityResult(requestCode, resultCode, data);
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         menu.add(Menu.NONE, MENU_SETTINGS, 0, R.string.main_menu_settings);
+//        menu.add(Menu.NONE, MENU_DATA_MANAGER, 0, R.string.main_menu_data_manager);
         return super.onCreateOptionsMenu(menu);
     }
 
@@ -146,11 +151,14 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    /**
+     * 开始扫描
+     */
     private void scan() {
         BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
         BluetoothLeScanner scanner = adapter.getBluetoothLeScanner();
         if (!adapter.isEnabled() || scanner == null) {
-            Toast.makeText(this, R.string.main_bt_disable_msg, Toast.LENGTH_SHORT).show();
+//            Toast.makeText(this, R.string.main_bt_disable_msg, Toast.LENGTH_SHORT).show();
             mRefreshLayout.setRefreshing(false);
             return;
         }
@@ -161,7 +169,7 @@ public class MainActivity extends AppCompatActivity {
             boolean locationEnable = locationManager != null && LocationManagerCompat.isLocationEnabled(locationManager);
             if (!locationEnable) {
                 Toast.makeText(this, R.string.main_location_disable_msg, Toast.LENGTH_SHORT).show();
-                mRefreshLayout.setRefreshing(false);
+//                mRefreshLayout.setRefreshing(false);
                 return;
             }
         }
@@ -185,6 +193,7 @@ public class MainActivity extends AppCompatActivity {
                     break;
                 }
 
+                // TODO: 永不超时
                 long scanCost = SystemClock.elapsedRealtime() - mScanStartTime;
                 if (scanCost > TIMEOUT_SCAN) {
                     break;
@@ -202,6 +211,9 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * 停止扫描
+     */
     private void stopScan() {
         BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
         BluetoothLeScanner scanner = adapter.getBluetoothLeScanner();
@@ -214,6 +226,11 @@ public class MainActivity extends AppCompatActivity {
         mLog.d("Stop scan ble");
     }
 
+    /**
+     * 刷新adapter数据
+     *
+     * @param over
+     */
     private void onIntervalScanUpdate(boolean over) {
         List<ScanResult> devices = new ArrayList<>(mDeviceMap.values());
         Collections.sort(devices, (dev1, dev2) -> {
@@ -242,27 +259,9 @@ public class MainActivity extends AppCompatActivity {
         mBleAdapter.notifyDataSetChanged();
     }
 
-    private class BleHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
-        ScanResult scanResult;
-        TextView text1;
-        TextView text2;
-
-        BleHolder(View itemView) {
-            super(itemView);
-
-            text1 = itemView.findViewById(android.R.id.text1);
-            text2 = itemView.findViewById(android.R.id.text2);
-
-            itemView.setOnClickListener(this);
-        }
-
-        @Override
-        public void onClick(View v) {
-            stopScan();
-            gotoDevice(scanResult.getDevice());
-        }
-    }
-
+    /**
+     * 扫描回调
+     */
     private class ScanCallback extends android.bluetooth.le.ScanCallback {
 
         @Override
@@ -295,7 +294,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private class BleAdapter extends RecyclerView.Adapter<BleHolder> {
-
         @NonNull
         @Override
         public BleHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -323,6 +321,25 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public int getItemCount() {
             return mBleList.size();
+        }
+    }
+
+    private class BleHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+        ScanResult scanResult;
+        TextView text1;
+        TextView text2;
+
+        BleHolder(View itemView) {
+            super(itemView);
+            text1 = itemView.findViewById(android.R.id.text1);
+            text2 = itemView.findViewById(android.R.id.text2);
+            itemView.setOnClickListener(this);
+        }
+
+        @Override
+        public void onClick(View v) {
+            stopScan();
+            gotoDevice(scanResult.getDevice());
         }
     }
 }
