@@ -143,10 +143,7 @@ public class SettingsActivity extends BaseActivity {
                 }
                 return true;
             } else if (preference == mDataOutput) {
-                DialogUtils.INSTANCE.showOutputExcelDialog(getContext(), () -> {
-                    outputExcel();
-                    return null;
-                });
+                outputExcel();
                 return true;
             } else if (preference == mDataDelete) {
                 DialogUtils.INSTANCE.showDeleteDialog(getContext());
@@ -161,7 +158,11 @@ public class SettingsActivity extends BaseActivity {
                     .runtime()
                     .permission(permissions)
                     .onGranted(data -> {
-                        FileUtils.exportExcel(getContext());
+                        DialogUtils.INSTANCE.showOutputExcelDialog(getContext(), () -> {
+                            FileUtils.exportExcel(getContext());
+                            ToastUtils.showLong("导出Excel成功!");
+                            return null;
+                        });
                     })
                     .onDenied(data -> {
                         ToastUtils.showLong("导出Excel需要存储权限!");

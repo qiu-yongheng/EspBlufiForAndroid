@@ -11,7 +11,7 @@ class RecordAdapter : BaseQuickAdapter<RecordEntity, BaseViewHolder>(R.layout.it
     override fun convert(holder: BaseViewHolder, item: RecordEntity) {
         holder.setText(R.id.tv_sn, item.id.toString())
             .setText(R.id.tv_time, DateUtils.formatDate(item.date, DateUtils.HH_MM_SS))
-            .setText(R.id.tv_machine_id, item.machineID)
+            .setText(R.id.tv_machine_id, item.mid)
             .setBackgroundColor(
                 R.id.ll_item,
                 if (holder.adapterPosition % 2 == 0) Res.getColor(R.color.color_record_bg_gray)

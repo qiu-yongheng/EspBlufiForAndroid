@@ -5,9 +5,11 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "record")
 data class RecordEntity(
-    @PrimaryKey(autoGenerate = true)
-    val id: Int,
     val date: Long,
-    val machineID: String,
+    val uid: String,
+    val mid: String,
     val other: String = ""
-)
+) {
+    @PrimaryKey(autoGenerate = true)
+    var id: Int = 0
+}

@@ -1,6 +1,8 @@
 package com.espressif.espblufi.util;
 
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.widget.Toast;
 
 import com.espressif.espblufi.db.RecordEntity;
@@ -115,7 +117,7 @@ public class ExcelUtil {
     /**
      * 将制定类型的List写入Excel中
      *
-     * @param objList  待写入的list
+     * @param objList 待写入的list
      */
     @SuppressWarnings("unchecked")
     public static <T> void writeObjListToExcel(List<RecordEntity> objList, String fileName, Context c) {
@@ -132,12 +134,12 @@ public class ExcelUtil {
                 WritableSheet sheet = writebook.getSheet(0);
 
                 for (int j = 0; j < objList.size(); j++) {
-                    RecordEntity entity =objList.get(j);
+                    RecordEntity entity = objList.get(j);
                     List<String> list = new ArrayList<>();
                     list.add(String.valueOf(entity.getId()));
                     list.add(DateUtils.INSTANCE.formatDate(entity.getDate(), "yyyy年MM月dd日"));
                     list.add(DateUtils.INSTANCE.formatDate(entity.getDate(), "HH:mm"));
-                    list.add(entity.getMachineID());
+                    list.add(entity.getMid());
 
                     for (int i = 0; i < list.size(); i++) {
                         sheet.addCell(new Label(i, j + 1, list.get(i), arial12format));
@@ -156,7 +158,6 @@ public class ExcelUtil {
 
                 writebook.write();
                 workbook.close();
-                Toast.makeText(c, "导出Excel成功", Toast.LENGTH_SHORT).show();
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {

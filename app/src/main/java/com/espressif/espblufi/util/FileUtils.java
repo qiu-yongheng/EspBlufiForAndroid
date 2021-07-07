@@ -19,7 +19,7 @@ public class FileUtils {
 
         String date = DateUtils.INSTANCE.formatDate(System.currentTimeMillis(), "yyyyMMdd");
         String time = DateUtils.INSTANCE.formatDate(System.currentTimeMillis(), "HHmm");
-        String excelFileName = "/Morning_" + date + "" + time + ".xls";
+        String excelFileName = "/Morning_" + date + "_" + time + ".xls";
 
 
         String[] title = {"SN", "Date", "Time", "MachineID"};

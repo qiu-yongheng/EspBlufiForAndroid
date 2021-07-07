@@ -34,6 +34,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.blankj.utilcode.util.ToastUtils;
+import com.chad.library.adapter.base.BaseQuickAdapter;
+import com.chad.library.adapter.base.listener.OnItemClickListener;
 import com.espressif.espblufi.R;
 import com.espressif.espblufi.app.BlufiApp;
 import com.espressif.espblufi.app.BlufiLog;
@@ -41,6 +43,8 @@ import com.espressif.espblufi.constants.BlufiConstants;
 import com.espressif.espblufi.constants.SettingsConstants;
 import com.espressif.espblufi.db.RecordEntity;
 import com.espressif.espblufi.db.RecordProvider;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -53,7 +57,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 public class MainActivity extends AppCompatActivity {
-    private static final long TIMEOUT_SCAN = 4000L;
+    private static final long TIMEOUT_SCAN = 2000L;
 
     private static final int REQUEST_PERMISSION = 0x01;
     private static final int REQUEST_BLUFI = 0x10;
@@ -68,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerView mRvDevice;
     private RecyclerView mRvRecord;
     private List<ScanResult> mBleList;
-    private BleAdapter mBleAdapter;
+    private DeviceAdapter mBleAdapter;
     private RecordAdapter mRecordAdapter;
 
     private Map<String, ScanResult> mDeviceMap;
@@ -146,8 +150,9 @@ public class MainActivity extends AppCompatActivity {
 
         // 设备列表
         mRvDevice = findViewById(R.id.rv_device);
+        mRvDevice.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         mBleList = new LinkedList<>();
-        mBleAdapter = new BleAdapter();
+        mBleAdapter = new DeviceAdapter();
         mRvDevice.setAdapter(mBleAdapter);
 
         mDeviceMap = new HashMap<>();
@@ -158,7 +163,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initListener() {
-
+        if (mBleAdapter != null) {
+            mBleAdapter.setOnItemClickListener((adapter, view, position) -> gotoDevice(mBleAdapter.getItem(position).getDevice()));
+        }
     }
 
     /**
@@ -195,26 +202,19 @@ public class MainActivity extends AppCompatActivity {
         mUpdateFuture = mThreadPool.submit(() -> {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(TIMEOUT_SCAN);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                     break;
                 }
 
-                // TODO: 永不超时
-                long scanCost = SystemClock.elapsedRealtime() - mScanStartTime;
-                if (scanCost > TIMEOUT_SCAN) {
-                    break;
-                }
-
-                onIntervalScanUpdate(false);
+                onIntervalScanUpdate();
             }
 
             BluetoothLeScanner inScanner = BluetoothAdapter.getDefaultAdapter().getBluetoothLeScanner();
             if (inScanner != null) {
                 inScanner.stopScan(mScanCallback);
             }
-            onIntervalScanUpdate(true);
             mLog.d("Scan ble thread is interrupted");
         });
     }
@@ -246,21 +246,18 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * 刷新adapter数据
-     *
-     * @param over
      */
-    private void onIntervalScanUpdate(boolean over) {
+    private void onIntervalScanUpdate() {
         List<ScanResult> devices = new ArrayList<>(mDeviceMap.values());
         Collections.sort(devices, (dev1, dev2) -> {
             Integer rssi1 = dev1.getRssi();
             Integer rssi2 = dev2.getRssi();
             return rssi2.compareTo(rssi1);
         });
-        runOnUiThread(() -> {
-            mBleList.clear();
-            mBleList.addAll(devices);
-            mBleAdapter.notifyDataSetChanged();
-        });
+        mDeviceMap.clear();
+        mBleList.clear();
+        mBleList.addAll(devices);
+        runOnUiThread(() -> mBleAdapter.setList(mBleList));
     }
 
     private void gotoDevice(BluetoothDevice device) {
@@ -277,7 +274,6 @@ public class MainActivity extends AppCompatActivity {
      * 扫描回调
      */
     private class ScanCallback extends android.bluetooth.le.ScanCallback {
-
         @Override
         public void onScanFailed(int errorCode) {
             super.onScanFailed(errorCode);
@@ -296,6 +292,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         private void onLeScan(ScanResult scanResult) {
+            mLog.d("ID: " + scanResult.getDevice().getName() + ", mac: " + scanResult.getDevice().getAddress());
             String name = scanResult.getDevice().getName();
             if (!TextUtils.isEmpty(mBlufiFilter)) {
                 if (name == null || !name.startsWith(mBlufiFilter)) {
@@ -304,56 +301,6 @@ public class MainActivity extends AppCompatActivity {
             }
 
             mDeviceMap.put(scanResult.getDevice().getAddress(), scanResult);
-        }
-    }
-
-    private class BleAdapter extends RecyclerView.Adapter<BleHolder> {
-        @NonNull
-        @Override
-        public BleHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View view = getLayoutInflater().inflate(R.layout.main_ble_item, parent, false);
-            return new BleHolder(view);
-        }
-
-        @Override
-        public void onBindViewHolder(@NonNull BleHolder holder, int position) {
-            ScanResult scanResult = mBleList.get(position);
-            holder.scanResult = scanResult;
-
-            BluetoothDevice device = scanResult.getDevice();
-            String name = device.getName() == null ? getString(R.string.string_unknown) : device.getName();
-            holder.text1.setText(name);
-
-            SpannableStringBuilder info = new SpannableStringBuilder();
-            info.append("Mac:").append(device.getAddress())
-                    .append(" RSSI:").append(String.valueOf(scanResult.getRssi()));
-            info.setSpan(new ForegroundColorSpan(0xFF9E9E9E), 0, 21, Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
-            info.setSpan(new ForegroundColorSpan(0xFF8D6E63), 21, info.length(), Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
-            holder.text2.setText(info);
-        }
-
-        @Override
-        public int getItemCount() {
-            return mBleList.size();
-        }
-    }
-
-    private class BleHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
-        ScanResult scanResult;
-        TextView text1;
-        TextView text2;
-
-        BleHolder(View itemView) {
-            super(itemView);
-            text1 = itemView.findViewById(android.R.id.text1);
-            text2 = itemView.findViewById(android.R.id.text2);
-            itemView.setOnClickListener(this);
-        }
-
-        @Override
-        public void onClick(View v) {
-            stopScan();
-            gotoDevice(scanResult.getDevice());
         }
     }
 }

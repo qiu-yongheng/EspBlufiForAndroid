@@ -24,10 +24,13 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.blankj.utilcode.util.ToastUtils;
 import com.espressif.espblufi.R;
 import com.espressif.espblufi.app.BaseActivity;
 import com.espressif.espblufi.app.BlufiLog;
 import com.espressif.espblufi.constants.BlufiConstants;
+import com.espressif.espblufi.db.RecordEntity;
+import com.espressif.espblufi.db.RecordProvider;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -81,6 +84,7 @@ public class BlufiActivity extends BaseActivity {
         mMsgAdapter = new MsgAdapter();
         mMsgRecyclerView.setAdapter(mMsgAdapter);
 
+        // 封装点击事件
         BlufiButtonListener clickListener = new BlufiButtonListener();
 
         mBlufiConnectBtn = findViewById(R.id.blufi_connect);
@@ -133,6 +137,9 @@ public class BlufiActivity extends BaseActivity {
         }
     }
 
+    /**
+     * 获取配网数据
+     */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_CONFIGURE) {
@@ -192,6 +199,7 @@ public class BlufiActivity extends BaseActivity {
 
     /**
      * If negotiate security success, the continue communication data will be encrypted.
+     * 加密
      */
     private void negotiateSecurity() {
         mBlufiSecurityBtn.setEnabled(false);
@@ -201,6 +209,7 @@ public class BlufiActivity extends BaseActivity {
 
     /**
      * Go to configure options
+     * 配网设置
      */
     private void configureOptions() {
         Intent intent = new Intent(BlufiActivity.this, ConfigureOptionsActivity.class);
@@ -209,6 +218,7 @@ public class BlufiActivity extends BaseActivity {
 
     /**
      * Request to configure station or softap
+     * 设置配网数据
      *
      * @param params configure params
      */
@@ -220,6 +230,7 @@ public class BlufiActivity extends BaseActivity {
 
     /**
      * Request to get device current status
+     * 获取状态
      */
     private void requestDeviceStatus() {
         mBlufiDeviceStatusBtn.setEnabled(false);
@@ -430,6 +441,11 @@ public class BlufiActivity extends BaseActivity {
             if (status == STATUS_SUCCESS) {
                 updateMessage(String.format("Receive device status response:\n%s", response.generateValidInfo()),
                         true);
+                String mid = mDevice.getName();
+                String uid = mid.substring(0, mid.length() - 2);
+                RecordEntity entity = new RecordEntity(System.currentTimeMillis(), uid, mid, "");
+                RecordProvider.INSTANCE.addRecord(entity);
+                ToastUtils.showLong("保存记录成功!");
             } else {
                 updateMessage("Device status response error, code=" + status, false);
             }
