@@ -3,4 +3,8 @@
     <color name="colorPrimary">#f53242</color>
     <color name="colorPrimaryDark">#ce2e32</color>
     <color name="colorAccent">#ff5983</color>
+
+    <color name="color_record_bg_white">#FFFFFFFF</color>
+    <color name="color_record_bg_gray">#FFaaaaaa</color>
+    <color name="color_record_title">#4CAF50</color>
 </resources>

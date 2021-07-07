@@ -16,6 +16,7 @@ object DateUtils {
     const val YYYYMMDD = "yyyy年MM月dd日"
     const val YYYY_MM_DD_HH_MM = "yyyy/MM/dd HH:mm"
     const val HH_MM = "HH:mm"
+    const val HH_MM_SS = "HH:mm:ss"
 
     fun formatDate(date: Date, pattern: String = "yyyy年MM月dd日"): String {
         val df = SimpleDateFormat(pattern, Locale.CHINA)

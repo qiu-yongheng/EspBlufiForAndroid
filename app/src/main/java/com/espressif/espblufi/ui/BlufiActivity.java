@@ -76,7 +76,7 @@ public class BlufiActivity extends BaseActivity {
         String deviceName = mDevice.getName() == null ? getString(R.string.string_unknown) : mDevice.getName();
         setTitle(deviceName);
 
-        mMsgRecyclerView = findViewById(R.id.recycler_view);
+        mMsgRecyclerView = findViewById(R.id.rv_record);
         mMsgList = new LinkedList<>();
         mMsgAdapter = new MsgAdapter();
         mMsgRecyclerView.setAdapter(mMsgAdapter);

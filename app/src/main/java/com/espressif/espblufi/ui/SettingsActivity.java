@@ -161,7 +161,6 @@ public class SettingsActivity extends BaseActivity {
                     .runtime()
                     .permission(permissions)
                     .onGranted(data -> {
-
                         FileUtils.exportExcel(getContext());
                     })
                     .onDenied(data -> {

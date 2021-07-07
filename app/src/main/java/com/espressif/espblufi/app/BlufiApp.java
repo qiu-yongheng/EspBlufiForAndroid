@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 
 import com.blankj.utilcode.util.Utils;
 import com.espressif.espblufi.constants.SettingsConstants;
+import com.espressif.espblufi.util.Res;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -29,6 +30,7 @@ public class BlufiApp extends Application {
         instance = this;
         mSettingsShared = getSharedPreferences(SettingsConstants.PREF_SETTINGS_NAME, Context.MODE_PRIVATE);
         Utils.init(this);
+        Res.INSTANCE.init(this);
     }
 
     @Override
