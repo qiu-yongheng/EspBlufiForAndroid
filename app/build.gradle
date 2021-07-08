@@ -16,16 +16,44 @@ android {
         versionName "1.6.0"
     }
 
+    signingConfigs {
+        release {
+            storeFile file("../ble.jks")
+            storePassword 'android'
+            keyAlias 'ble'
+            keyPassword 'android'
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+        debug {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
         }
     }
+
+    applicationVariants.all { variant ->
+        variant.outputs.all {
+            def fileName = "ble" + "_V${defaultConfig.versionName}_C${defaultConfig.versionCode}_${buildTime()}_" + variant.name + ".apk"
+            outputFileName = fileName
+        }
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+}
+
+static def buildTime() {
+    Date date = new Date();
+    return date.format("yyMMddHHmm")
 }
 
 dependencies {
@@ -51,4 +79,5 @@ dependencies {
     implementation 'com.afollestad.material-dialogs:input:3.3.0'
     implementation 'com.blankj:utilcodex:1.30.6'
     implementation 'com.yanzhenjie:permission:2.0.3'
+    implementation 'com.google.code.gson:gson:2.8.7'
 }

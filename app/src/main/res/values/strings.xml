@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">EspBluFi</string>
+    <string name="app_name">Morning blufi</string>
 
     <string name="string_unknown">Unknown</string>
 
@@ -76,4 +76,6 @@
     <string name="settings_ble_data_delete_hint">删除所有数据</string>
     <string name="settings_ble_data_delete_key">settings_ble_data_delete_key</string>
     <string name="settings_ble_data_delete_title">BLE data delete</string>
+    <string name="settings_ble_configure_option_key">settings_ble_configure_option_key</string>
+    <string name="settings_ble_configure_option_title">配网配置</string>
 </resources>

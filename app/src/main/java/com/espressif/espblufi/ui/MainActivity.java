@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.LocationManager;
@@ -13,6 +14,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.PowerManager;
 import android.os.SystemClock;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -23,6 +25,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -45,6 +48,10 @@ import com.espressif.espblufi.constants.BlufiConstants;
 import com.espressif.espblufi.constants.SettingsConstants;
 import com.espressif.espblufi.db.RecordEntity;
 import com.espressif.espblufi.db.RecordProvider;
+import com.espressif.espblufi.util.DialogUtils;
+import com.espressif.espblufi.util.FileUtils;
+import com.yanzhenjie.permission.AndPermission;
+import com.yanzhenjie.permission.runtime.Permission;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -84,11 +91,13 @@ public class MainActivity extends AppCompatActivity {
 
     private ExecutorService mThreadPool = Executors.newSingleThreadExecutor();
     private Future mUpdateFuture;
+    private PowerManager.WakeLock mWakeLock;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_activity);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         initView();
         initListener();
     }
@@ -96,13 +105,13 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // 权限申请
         mLog.d("onResume");
-//        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_PERMISSION);
-//        if (mRefreshLayout != null) {
-//            mRefreshLayout.setRefreshing(true);
-//            updateRecord();
-//        }
+        requestPermission();
+        // 权限申请
+        if (mRefreshLayout != null) {
+            mRefreshLayout.setRefreshing(true);
+            updateRecord();
+        }
     }
 
     @Override
@@ -116,6 +125,9 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         stopScan();
         mThreadPool.shutdownNow();
+        if (mWakeLock != null && mWakeLock.isHeld()) {
+            mWakeLock.release();
+        }
     }
 
     @Override
@@ -177,12 +189,28 @@ public class MainActivity extends AppCompatActivity {
 
         mDeviceMap = new HashMap<>();
         mScanCallback = new ScanCallback();
+
+        // 权限申请
+//        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_PERMISSION);
     }
 
     private void initListener() {
         if (mBleAdapter != null) {
             mBleAdapter.setOnItemClickListener((adapter, view, position) -> gotoDevice(mBleAdapter.getItem(position).getDevice()));
         }
+    }
+
+    private void requestPermission() {
+        AndPermission.with(this)
+                .runtime()
+                .permission(Permission.ACCESS_FINE_LOCATION)
+                .onGranted(data -> {
+                    scan();
+                })
+                .onDenied(data -> {
+                    ToastUtils.showLong("扫描设备需要定位权限!");
+                })
+                .start();
     }
 
     /**
@@ -311,7 +339,8 @@ public class MainActivity extends AppCompatActivity {
         private void onLeScan(ScanResult scanResult) {
             mLog.d("ID: " + scanResult.getDevice().getName() + ", mac: " + scanResult.getDevice().getAddress());
             String name = scanResult.getDevice().getName();
-            if (!TextUtils.isEmpty(mBlufiFilter)) {
+            String filter = mBlufiFilter.trim();
+            if (!TextUtils.isEmpty(filter)) {
                 if (name == null || !name.startsWith(mBlufiFilter)) {
                     return;
                 }

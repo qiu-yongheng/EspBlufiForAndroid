@@ -441,10 +441,7 @@ public class BlufiActivity extends BaseActivity {
             if (status == STATUS_SUCCESS) {
                 updateMessage(String.format("Receive device status response:\n%s", response.generateValidInfo()),
                         true);
-                String mid = mDevice.getName();
-                String uid = mid.substring(0, mid.length() - 2);
-                RecordEntity entity = new RecordEntity(System.currentTimeMillis(), uid, mid, "");
-                RecordProvider.INSTANCE.addRecord(entity);
+                RecordProvider.INSTANCE.addRecord(mDevice);
                 ToastUtils.showLong("保存记录成功!");
             } else {
                 updateMessage("Device status response error, code=" + status, false);

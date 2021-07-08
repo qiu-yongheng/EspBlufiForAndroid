@@ -22,6 +22,7 @@ import com.espressif.espblufi.R;
 import com.espressif.espblufi.app.BaseActivity;
 import com.espressif.espblufi.app.BlufiApp;
 import com.espressif.espblufi.constants.BlufiConstants;
+import com.espressif.espblufi.constants.MorningConfig;
 import com.espressif.espblufi.constants.SettingsConstants;
 import com.espressif.espblufi.db.RecordProvider;
 import com.espressif.espblufi.task.BlufiAppReleaseTask;
@@ -65,6 +66,7 @@ public class SettingsActivity extends BaseActivity {
         private EditTextPreference mBlePrefixPref;
         private Preference mDataOutput;
         private Preference mDataDelete;
+        private Preference mConfigureOption;
 
         private Preference mVersionCheckPref;
         private volatile BlufiAppReleaseTask.ReleaseInfo mAppLatestRelease;
@@ -107,12 +109,31 @@ public class SettingsActivity extends BaseActivity {
             mDataOutput.setSummary("导出路径: " + FileUtils.outputPath);
             mDataDelete = findPreference(R.string.settings_ble_data_delete_key);
             updateRecordSize();
+
+            mConfigureOption = findPreference(R.string.settings_ble_configure_option_key);
+            updateConfig();
+        }
+
+        @Override
+        public void onResume() {
+            super.onResume();
+            updateConfig();
         }
 
         private void updateRecordSize() {
             int recordSize = RecordProvider.INSTANCE.getRecordSize();
             if (mDataDelete != null) {
                 mDataDelete.setSummary(recordSize == 0 ? "暂无配网记录" : "配网记录: " + recordSize + "条");
+            }
+        }
+
+        private void updateConfig() {
+            if (mConfigureOption != null){
+                String ssid = MorningConfig.INSTANCE.getSSID();
+                String pwd = MorningConfig.INSTANCE.getPwd();
+
+                String summary = TextUtils.isEmpty(ssid) ? "" : "SSID: " + ssid + ",    " + pwd;
+                mConfigureOption.setSummary(summary);
             }
         }
 
@@ -150,6 +171,9 @@ public class SettingsActivity extends BaseActivity {
                     updateRecordSize();
                     return null;
                 });
+                return true;
+            } else if (preference == mConfigureOption) {
+                startActivity(new Intent(getContext(), ConfigureOptionsActivity.class));
                 return true;
             }
 

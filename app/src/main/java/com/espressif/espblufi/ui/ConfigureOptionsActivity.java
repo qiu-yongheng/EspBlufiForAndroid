@@ -26,6 +26,9 @@ import com.espressif.espblufi.R;
 import com.espressif.espblufi.app.BaseActivity;
 import com.espressif.espblufi.app.BlufiLog;
 import com.espressif.espblufi.constants.BlufiConstants;
+import com.espressif.espblufi.constants.MorningConfig;
+import com.espressif.espblufi.util.SPUtils;
+import com.google.gson.Gson;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -47,6 +50,8 @@ public class ConfigureOptionsActivity extends BaseActivity implements AdapterVie
     private static final int OP_MODE_POS_STA = 0;
     private static final int OP_MODE_POS_SOFTAP = 1;
     private static final int OP_MODE_POS_STASOFTAP = 2;
+
+    public static final String KEY_JUMP_MAIN = "KEY_JUMP_MAIN";
 
     private static final int[] OP_MODE_VALUES = {
             BlufiParameter.OP_MODE_STA,
@@ -87,6 +92,7 @@ public class ConfigureOptionsActivity extends BaseActivity implements AdapterVie
     private ArrayAdapter<String> mAutoCompleteSSIDAdapter;
 
     private SharedPreferences mApPref;
+    private boolean isJumpMain = false;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -95,6 +101,11 @@ public class ConfigureOptionsActivity extends BaseActivity implements AdapterVie
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         setHomeAsUpEnable(true);
+
+        Intent intent = getIntent();
+        if (intent != null) {
+            isJumpMain = intent.getBooleanExtra(KEY_JUMP_MAIN, false);
+        }
 
         mWifiManager = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
 
@@ -483,6 +494,8 @@ public class ConfigureOptionsActivity extends BaseActivity implements AdapterVie
                 String ssid = new String(params.getStaSSIDBytes());
                 String pwd = params.getStaPassword();
                 mApPref.edit().putString(ssid, pwd).apply();
+                MorningConfig.INSTANCE.setSSID(ssid);
+                MorningConfig.INSTANCE.setPwd(pwd);
                 break;
             default:
                 break;
@@ -494,8 +507,14 @@ public class ConfigureOptionsActivity extends BaseActivity implements AdapterVie
         intent.putExtra(BlufiConstants.KEY_CONFIGURE_PARAM, params);
 
         saveAP(params);
+        SPUtils.INSTANCE.put(BlufiConstants.KEY_CONFIGURE_PARAM, new Gson().toJson(params));
 
         setResult(RESULT_OK, intent);
+
+        if (isJumpMain) {
+            startActivity(new Intent(this, MainActivity.class));
+        }
+
         finish();
     }
 }

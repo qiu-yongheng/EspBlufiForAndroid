@@ -1,12 +1,33 @@
 package com.espressif.espblufi.db
 
+import android.bluetooth.BluetoothDevice
 import com.espressif.espblufi.app.BlufiApp
 
 object RecordProvider {
     private val dao: RecordDao by lazy { AppDataBase.instance(BlufiApp.getInstance()).recordDao() }
 
     fun addRecord(entity: RecordEntity) {
-        dao.addRecord(entity)
+        val record = dao.getRecordForUid(entity.uid)
+        if (record == null) {
+            dao.addRecord(entity)
+        } else {
+            record.date = entity.date
+            record.mid = entity.mid
+            record.other = entity.other
+            dao.addRecord(record)
+        }
+    }
+
+    fun addRecord(device: BluetoothDevice) {
+        val name = device.name
+        if (name.isNullOrEmpty()) {
+            return
+        }
+        val split = name.split("-")
+        val mid: String = split[split.lastIndex]
+        val uid = mid.substring(0, mid.length - 2)
+        val entity = RecordEntity(System.currentTimeMillis(), uid, mid, "")
+        addRecord(entity)
     }
 
     fun deleteRecord(entity: RecordEntity) {
@@ -15,6 +36,7 @@ object RecordProvider {
 
     fun deleteAllRecord() {
         dao.deleteAll()
+        dao.resetIndex()
     }
 
     fun getAllRecord(): List<RecordEntity> {

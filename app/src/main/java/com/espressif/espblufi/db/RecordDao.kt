@@ -15,4 +15,10 @@ interface RecordDao {
 
     @Query("SELECT * FROM record ORDER BY id DESC")
     fun getAllRecord(): List<RecordEntity>
+
+    @Query("SELECT * FROM record WHERE uid=:uid")
+    fun getRecordForUid(uid: String): RecordEntity?
+
+    @Query("UPDATE sqlite_sequence SET seq = '0' WHERE name = 'record'")
+    fun resetIndex()
 }

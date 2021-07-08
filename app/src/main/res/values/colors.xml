@@ -5,6 +5,6 @@
     <color name="colorAccent">#ff5983</color>
 
     <color name="color_record_bg_white">#FFFFFFFF</color>
-    <color name="color_record_bg_gray">#FFaaaaaa</color>
+    <color name="color_record_bg_gray">#aaaaaaaa</color>
     <color name="color_record_title">#4CAF50</color>
 </resources>

@@ -139,7 +139,7 @@ public class ExcelUtil {
                     list.add(String.valueOf(entity.getId()));
                     list.add(DateUtils.INSTANCE.formatDate(entity.getDate(), "yyyy年MM月dd日"));
                     list.add(DateUtils.INSTANCE.formatDate(entity.getDate(), "HH:mm"));
-                    list.add(entity.getMid());
+                    list.add("M_" + entity.getMid());
 
                     for (int i = 0; i < list.size(); i++) {
                         sheet.addCell(new Label(i, j + 1, list.get(i), arial12format));

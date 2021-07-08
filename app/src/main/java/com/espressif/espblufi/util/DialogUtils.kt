@@ -15,8 +15,8 @@ object DialogUtils {
             title(text = "确定清空数据吗, 清空后不可恢复")
             input(
                 hint = "密码",
-                inputType = InputType.TYPE_NUMBER_VARIATION_PASSWORD,
-                maxLength = 6
+                inputType = InputType.TYPE_TEXT_VARIATION_PASSWORD,
+                maxLength = 7
             ) { _, text ->
                 if (text.toString() == BlufiConstants.DELETE_PWD) {
                     RecordProvider.deleteAllRecord()
