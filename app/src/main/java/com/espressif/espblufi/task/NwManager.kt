@@ -4,11 +4,16 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.le.ScanResult
 import android.util.Log
 import com.espressif.espblufi.util.DeviceUtils
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 object NwManager {
-    private val executor = Executors.newFixedThreadPool(4)
+    private var executor: ExecutorService? = null
     private val runningTask = ArrayList<NwTask>()
+
+    fun init() {
+        executor = Executors.newFixedThreadPool(4)
+    }
 
     private fun executor(device: BluetoothDevice) {
         if (isContains(device)) {
@@ -16,7 +21,7 @@ object NwManager {
             return
         }
         val nwTask = NwTask(device)
-        executor.execute(nwTask)
+        executor?.execute(nwTask)
         runningTask.add(nwTask)
     }
 
@@ -32,7 +37,7 @@ object NwManager {
 
     fun destroy() {
         log("销毁所有任务")
-        executor.shutdownNow()
+        executor?.shutdownNow()
         runningTask.clear()
     }
 

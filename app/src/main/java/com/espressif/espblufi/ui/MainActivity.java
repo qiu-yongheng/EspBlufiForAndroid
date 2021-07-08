@@ -8,6 +8,7 @@ import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.LabeledIntent;
 import android.content.pm.PackageManager;
 import android.location.LocationManager;
 import android.os.Build;
@@ -41,6 +42,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.blankj.utilcode.util.ToastUtils;
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.chad.library.adapter.base.listener.OnItemClickListener;
+import com.chad.library.adapter.base.listener.OnItemLongClickListener;
 import com.espressif.espblufi.R;
 import com.espressif.espblufi.app.BlufiApp;
 import com.espressif.espblufi.app.BlufiLog;
@@ -56,6 +58,7 @@ import com.yanzhenjie.permission.runtime.Permission;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -65,6 +68,9 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+
+import kotlin.Unit;
+import kotlin.jvm.functions.Function0;
 
 public class MainActivity extends AppCompatActivity {
     private static final long TIMEOUT_SCAN = 2000L;
@@ -77,8 +83,6 @@ public class MainActivity extends AppCompatActivity {
 
     private final BlufiLog mLog = new BlufiLog(getClass());
 
-    private SwipeRefreshLayout mRefreshLayout;
-
     private RecyclerView mRvDevice;
     private RecyclerView mRvRecord;
     private List<ScanResult> mBleList;
@@ -90,15 +94,16 @@ public class MainActivity extends AppCompatActivity {
     private String mBlufiFilter;
     private volatile long mScanStartTime;
 
-    private ExecutorService mThreadPool = Executors.newSingleThreadExecutor();
+    private ExecutorService mThreadPool;
     private Future mUpdateFuture;
-    private PowerManager.WakeLock mWakeLock;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_activity);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        mThreadPool = Executors.newSingleThreadExecutor();
+        NwManager.INSTANCE.init();
         initView();
         initListener();
     }
@@ -108,11 +113,7 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         mLog.d("onResume");
         requestPermission();
-        // 权限申请
-        if (mRefreshLayout != null) {
-            mRefreshLayout.setRefreshing(true);
-            updateRecord();
-        }
+        updateRecord();
     }
 
     @Override
@@ -125,28 +126,10 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         stopScan();
+        mScanCallback = null;
+        mDeviceMap.clear();
         mThreadPool.shutdownNow();
         NwManager.INSTANCE.destroy();
-        if (mWakeLock != null && mWakeLock.isHeld()) {
-            mWakeLock.release();
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        int size = permissions.length;
-        for (int i = 0; i < size; ++i) {
-            String permission = permissions[i];
-            int grant = grantResults[i];
-
-            if (permission.equals(Manifest.permission.ACCESS_FINE_LOCATION)) {
-                if (grant == PackageManager.PERMISSION_GRANTED) {
-                    // 开始扫描
-                    scan();
-                }
-            }
-        }
     }
 
     @Override
@@ -170,11 +153,6 @@ public class MainActivity extends AppCompatActivity {
         toolbar.setTitle("");
         setSupportActionBar(toolbar);
 
-        // 下拉刷新
-        mRefreshLayout = findViewById(R.id.refresh_layout);
-        mRefreshLayout.setColorSchemeResources(R.color.colorAccent);
-        mRefreshLayout.setOnRefreshListener(this::updateRecord);
-
         // 配网记录
         mRvRecord = findViewById(R.id.rv_record);
         mRvRecord.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
@@ -190,13 +168,23 @@ public class MainActivity extends AppCompatActivity {
         mRvDevice.setAdapter(mBleAdapter);
 
         mDeviceMap = new HashMap<>();
-        mScanCallback = new ScanCallback();
+        mScanCallback = new ScanCallback(this);
     }
 
     private void initListener() {
         if (mBleAdapter != null) {
             mBleAdapter.setOnItemClickListener((adapter, view, position) -> gotoDevice(mBleAdapter.getItem(position).getDevice()));
         }
+//        if (mRecordAdapter != null) {
+//            mRecordAdapter.setOnItemClickListener((adapter, view, position) -> {
+//                RecordEntity item = mRecordAdapter.getItem(position);
+//                DialogUtils.INSTANCE.showDeleteRecordDialog(MainActivity.this, () -> {
+//                    mRecordAdapter.removeAt(position);
+//                    RecordProvider.INSTANCE.deleteRecord(item);
+//                    return null;
+//                });
+//            });
+//        }
     }
 
     private void requestPermission() {
@@ -280,11 +268,10 @@ public class MainActivity extends AppCompatActivity {
 
     private void updateRecord() {
         List<RecordEntity> allRecord = RecordProvider.INSTANCE.getAllRecord();
-        mLog.d("更新配网记录: " + allRecord);
+        mLog.d("更新配网记录");
         if (mRecordAdapter != null) {
             mRecordAdapter.setList(allRecord);
         }
-        mRefreshLayout.setRefreshing(false);
     }
 
     /**
@@ -318,7 +305,14 @@ public class MainActivity extends AppCompatActivity {
     /**
      * 扫描回调
      */
-    private class ScanCallback extends android.bluetooth.le.ScanCallback {
+    private static class ScanCallback extends android.bluetooth.le.ScanCallback {
+        private WeakReference<MainActivity> aty;
+
+
+        public ScanCallback(MainActivity activity) {
+            aty = new WeakReference<>(activity);
+        }
+
         @Override
         public void onScanFailed(int errorCode) {
             super.onScanFailed(errorCode);
@@ -338,15 +332,18 @@ public class MainActivity extends AppCompatActivity {
 
         private void onLeScan(ScanResult scanResult) {
 //            mLog.d("ID: " + scanResult.getDevice().getName() + ", mac: " + scanResult.getDevice().getAddress());
-            String name = scanResult.getDevice().getName();
-            String filter = mBlufiFilter.trim();
-            if (!TextUtils.isEmpty(filter)) {
-                if (name == null || !name.startsWith(mBlufiFilter)) {
-                    return;
+            MainActivity activity = aty.get();
+            if (activity != null) {
+                String name = scanResult.getDevice().getName();
+                String filter = activity.mBlufiFilter.trim();
+                if (!TextUtils.isEmpty(filter)) {
+                    if (name == null || !name.startsWith(activity.mBlufiFilter)) {
+                        return;
+                    }
                 }
-            }
 
-            mDeviceMap.put(scanResult.getDevice().getAddress(), scanResult);
+                activity.mDeviceMap.put(scanResult.getDevice().getAddress(), scanResult);
+            }
         }
     }
 }

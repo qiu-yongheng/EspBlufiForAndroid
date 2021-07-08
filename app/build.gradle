@@ -40,7 +40,7 @@ android {
 
     applicationVariants.all { variant ->
         variant.outputs.all {
-            def fileName = "ble" + "_V${defaultConfig.versionName}_C${defaultConfig.versionCode}_${buildTime()}_" + variant.name + ".apk"
+            def fileName = "Morning" + "_V${defaultConfig.versionName}_C${defaultConfig.versionCode}_${buildTime()}_" + variant.name + ".apk"
             outputFileName = fileName
         }
     }
@@ -73,6 +73,7 @@ dependencies {
     implementation 'io.reactivex.rxjava3:rxjava:3.0.13'
     implementation 'io.reactivex.rxjava3:rxandroid:3.0.0'
 
+    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.7'
     implementation 'com.github.CymChad:BaseRecyclerViewAdapterHelper:3.0.4'
     implementation 'com.github.EspressifApp:lib-blufi-android:2.3.4'
     implementation 'com.afollestad.material-dialogs:core:3.3.0'

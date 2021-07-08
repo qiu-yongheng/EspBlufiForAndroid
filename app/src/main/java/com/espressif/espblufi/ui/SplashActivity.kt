@@ -9,6 +9,8 @@ import com.blankj.utilcode.util.ToastUtils
 import com.espressif.espblufi.R
 import com.espressif.espblufi.constants.BlufiConstants
 import com.espressif.espblufi.util.SPUtils
+import com.yanzhenjie.permission.AndPermission
+import com.yanzhenjie.permission.runtime.Permission
 
 class SplashActivity : AppCompatActivity() {
     private val handler = Handler(Looper.getMainLooper())
@@ -17,7 +19,19 @@ class SplashActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_splash)
 
-        handler.postDelayed({ jump() }, 1000)
+        AndPermission.with(this)
+                .runtime()
+                .permission(Permission.ACCESS_FINE_LOCATION)
+                .onGranted {
+                    jump()
+                }
+                .onDenied {
+                    ToastUtils.showLong("配网需要定位权限!")
+                    finish()
+                }
+                .start()
+
+
     }
 
     private fun jump() {
