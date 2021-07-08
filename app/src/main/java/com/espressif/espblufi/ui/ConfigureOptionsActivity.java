@@ -507,7 +507,7 @@ public class ConfigureOptionsActivity extends BaseActivity implements AdapterVie
         intent.putExtra(BlufiConstants.KEY_CONFIGURE_PARAM, params);
 
         saveAP(params);
-        SPUtils.INSTANCE.put(BlufiConstants.KEY_CONFIGURE_PARAM, new Gson().toJson(params));
+        MorningConfig.INSTANCE.setConfigure(params);
 
         setResult(RESULT_OK, intent);
 

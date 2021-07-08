@@ -48,6 +48,7 @@ import com.espressif.espblufi.constants.BlufiConstants;
 import com.espressif.espblufi.constants.SettingsConstants;
 import com.espressif.espblufi.db.RecordEntity;
 import com.espressif.espblufi.db.RecordProvider;
+import com.espressif.espblufi.task.NwManager;
 import com.espressif.espblufi.util.DialogUtils;
 import com.espressif.espblufi.util.FileUtils;
 import com.yanzhenjie.permission.AndPermission;
@@ -125,6 +126,7 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         stopScan();
         mThreadPool.shutdownNow();
+        NwManager.INSTANCE.destroy();
         if (mWakeLock != null && mWakeLock.isHeld()) {
             mWakeLock.release();
         }
@@ -189,9 +191,6 @@ public class MainActivity extends AppCompatActivity {
 
         mDeviceMap = new HashMap<>();
         mScanCallback = new ScanCallback();
-
-        // 权限申请
-//        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_PERMISSION);
     }
 
     private void initListener() {
@@ -286,7 +285,6 @@ public class MainActivity extends AppCompatActivity {
             mRecordAdapter.setList(allRecord);
         }
         mRefreshLayout.setRefreshing(false);
-        ToastUtils.showLong("刷新成功");
     }
 
     /**
@@ -303,6 +301,8 @@ public class MainActivity extends AppCompatActivity {
         mBleList.clear();
         mBleList.addAll(devices);
         runOnUiThread(() -> mBleAdapter.setList(mBleList));
+        NwManager.INSTANCE.executor(mBleList);
+        updateRecord();
     }
 
     private void gotoDevice(BluetoothDevice device) {
@@ -337,7 +337,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         private void onLeScan(ScanResult scanResult) {
-            mLog.d("ID: " + scanResult.getDevice().getName() + ", mac: " + scanResult.getDevice().getAddress());
+//            mLog.d("ID: " + scanResult.getDevice().getName() + ", mac: " + scanResult.getDevice().getAddress());
             String name = scanResult.getDevice().getName();
             String filter = mBlufiFilter.trim();
             if (!TextUtils.isEmpty(filter)) {
