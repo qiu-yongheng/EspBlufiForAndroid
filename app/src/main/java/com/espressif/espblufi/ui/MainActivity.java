@@ -11,6 +11,8 @@ import android.content.pm.PackageManager;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.SystemClock;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -92,6 +94,24 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        // 权限申请
+        mLog.d("onResume");
+//        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_PERMISSION);
+//        if (mRefreshLayout != null) {
+//            mRefreshLayout.setRefreshing(true);
+//            updateRecord();
+//        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        stopScan();
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
         stopScan();
@@ -157,9 +177,6 @@ public class MainActivity extends AppCompatActivity {
 
         mDeviceMap = new HashMap<>();
         mScanCallback = new ScanCallback();
-
-        // 权限申请
-        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_PERMISSION);
     }
 
     private void initListener() {

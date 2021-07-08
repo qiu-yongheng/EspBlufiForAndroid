@@ -146,7 +146,10 @@ public class SettingsActivity extends BaseActivity {
                 outputExcel();
                 return true;
             } else if (preference == mDataDelete) {
-                DialogUtils.INSTANCE.showDeleteDialog(getContext());
+                DialogUtils.INSTANCE.showDeleteDialog(getContext(), ()-> {
+                    updateRecordSize();
+                    return null;
+                });
                 return true;
             }
 

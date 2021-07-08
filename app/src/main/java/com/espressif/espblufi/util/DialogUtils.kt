@@ -10,7 +10,7 @@ import com.espressif.espblufi.db.RecordProvider
 
 object DialogUtils {
 
-    fun showDeleteDialog(context: Context) {
+    fun showDeleteDialog(context: Context, success:()->Unit) {
         MaterialDialog(context).show {
             title(text = "确定清空数据吗, 清空后不可恢复")
             input(
@@ -19,7 +19,9 @@ object DialogUtils {
                 maxLength = 6
             ) { _, text ->
                 if (text.toString() == BlufiConstants.DELETE_PWD) {
+                    RecordProvider.deleteAllRecord()
                     ToastUtils.showLong("删除成功")
+                    success()
                 } else {
                     ToastUtils.showLong("删除失败, 密码错误!")
                 }
