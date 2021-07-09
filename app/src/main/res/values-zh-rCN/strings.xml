@@ -4,7 +4,7 @@
 
     <string name="string_unknown">未知</string>
 
-    <string name="main_title">EspBluFi</string>
+    <string name="main_title">MorningBluFi</string>
     <string name="main_bt_disable_msg">蓝牙不可用</string>
     <string name="main_location_disable_msg">位置信息(GPS)不可用</string>
     <string name="main_menu_settings">设置</string>

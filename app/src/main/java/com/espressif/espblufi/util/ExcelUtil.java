@@ -120,7 +120,7 @@ public class ExcelUtil {
      * @param objList 待写入的list
      */
     @SuppressWarnings("unchecked")
-    public static <T> void writeObjListToExcel(List<RecordEntity> objList, String fileName, Context c) {
+    public static <T> boolean writeObjListToExcel(List<RecordEntity> objList, String fileName, Context c) {
         if (objList != null && objList.size() > 0) {
             WritableWorkbook writebook = null;
             InputStream in = null;
@@ -158,6 +158,7 @@ public class ExcelUtil {
 
                 writebook.write();
                 workbook.close();
+                return true;
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
@@ -177,8 +178,8 @@ public class ExcelUtil {
                     }
                 }
             }
-
         }
+        return false;
     }
 
 

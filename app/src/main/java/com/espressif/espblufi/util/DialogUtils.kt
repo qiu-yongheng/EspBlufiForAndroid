@@ -43,10 +43,10 @@ object DialogUtils {
         }
     }
 
-    fun showDeleteRecordDialog(context: Context, success:()->Unit) {
+    fun showDeleteRecordDialog(context: Context, mid: String, success:()->Unit) {
         MaterialDialog(context).show {
             title(text = "数据删除")
-            message(text = "确定删除该数据吗, 删除后不可恢复")
+            message(text = "确定删除M_${mid}吗, 删除后不可恢复")
             positiveButton(text = "删除") {
                 success()
             }

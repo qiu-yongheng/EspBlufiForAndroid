@@ -27,12 +27,12 @@
             app:title="@string/settings_ble_data_output_title" />
         <androidx.preference.Preference
             app:iconSpaceReserved="false"
-            app:key="@string/settings_ble_data_manager_key"
-            app:title="@string/settings_ble_data_manager_title" />
-        <androidx.preference.Preference
-            app:iconSpaceReserved="false"
             app:key="@string/settings_ble_data_delete_key"
             app:title="@string/settings_ble_data_delete_title" />
+        <androidx.preference.Preference
+            app:iconSpaceReserved="false"
+            app:key="@string/settings_ble_data_manager_key"
+            app:title="@string/settings_ble_data_manager_title" />
     </androidx.preference.PreferenceCategory>
 
     <androidx.preference.PreferenceCategory

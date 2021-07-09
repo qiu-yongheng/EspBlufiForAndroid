@@ -115,6 +115,7 @@ public class SettingsActivity extends BaseActivity {
             updateConfig();
 
             mDataManager = findPreference(R.string.settings_ble_data_manager_key);
+            mDataManager.setSummary("点击删除");
         }
 
         @Override
@@ -192,8 +193,9 @@ public class SettingsActivity extends BaseActivity {
                     .permission(permissions)
                     .onGranted(data -> {
                         DialogUtils.INSTANCE.showOutputExcelDialog(getContext(), () -> {
-                            FileUtils.exportExcel(getContext());
-                            ToastUtils.showLong("导出Excel成功!");
+                            FileUtils.exportExcel(getContext(), isSuccess -> {
+                                ToastUtils.showLong("导出Excel成功!");
+                            });
                             return null;
                         });
                     })

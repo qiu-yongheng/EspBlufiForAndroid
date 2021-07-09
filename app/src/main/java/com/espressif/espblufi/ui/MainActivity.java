@@ -53,9 +53,13 @@ import com.espressif.espblufi.db.RecordProvider;
 import com.espressif.espblufi.task.NwManager;
 import com.espressif.espblufi.util.DialogUtils;
 import com.espressif.espblufi.util.FileUtils;
+import com.espressif.espblufi.util.LooperEvent;
+import com.espressif.espblufi.util.LooperManager;
 import com.yanzhenjie.permission.AndPermission;
 import com.yanzhenjie.permission.runtime.Permission;
 
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.WeakReference;
@@ -73,18 +77,9 @@ import kotlin.Unit;
 import kotlin.jvm.functions.Function0;
 
 public class MainActivity extends AppCompatActivity {
-    private static final long TIMEOUT_SCAN = 2000L;
-
-    private static final int REQUEST_PERMISSION = 0x01;
-    private static final int REQUEST_BLUFI = 0x10;
-
     private static final int MENU_SETTINGS = 0x01;
-    private static final int MENU_DATA_MANAGER = 0x02;
-
     private final BlufiLog mLog = new BlufiLog(getClass());
 
-    private RecyclerView mRvDevice;
-    private RecyclerView mRvRecord;
     private List<ScanResult> mBleList;
     private DeviceAdapter mBleAdapter;
     private RecordAdapter mRecordAdapter;
@@ -92,17 +87,12 @@ public class MainActivity extends AppCompatActivity {
     private Map<String, ScanResult> mDeviceMap;
     private ScanCallback mScanCallback;
     private String mBlufiFilter;
-    private volatile long mScanStartTime;
-
-    private ExecutorService mThreadPool;
-    private Future mUpdateFuture;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_activity);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        mThreadPool = Executors.newSingleThreadExecutor();
         NwManager.INSTANCE.init();
         initView();
         initListener();
@@ -112,6 +102,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         mLog.d("onResume");
+        EventBus.getDefault().register(this);
+        LooperManager.INSTANCE.start(2000);
         requestPermission();
         updateRecord();
     }
@@ -119,6 +111,9 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
+        mLog.d("onPause");
+        EventBus.getDefault().unregister(this);
+        LooperManager.INSTANCE.stop();
         stopScan();
     }
 
@@ -128,7 +123,6 @@ public class MainActivity extends AppCompatActivity {
         stopScan();
         mScanCallback = null;
         mDeviceMap.clear();
-        mThreadPool.shutdownNow();
         NwManager.INSTANCE.destroy();
     }
 
@@ -154,14 +148,14 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         // 配网记录
-        mRvRecord = findViewById(R.id.rv_record);
+        RecyclerView mRvRecord = findViewById(R.id.rv_record);
         mRvRecord.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         mRecordAdapter = new RecordAdapter();
         mRvRecord.setAdapter(mRecordAdapter);
         mRecordAdapter.setEmptyView(R.layout.item_empty);
 
         // 设备列表
-        mRvDevice = findViewById(R.id.rv_device);
+        RecyclerView mRvDevice = findViewById(R.id.rv_device);
         mRvDevice.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         mBleList = new LinkedList<>();
         mBleAdapter = new DeviceAdapter();
@@ -226,29 +220,10 @@ public class MainActivity extends AppCompatActivity {
         mBleAdapter.notifyDataSetChanged();
         mBlufiFilter = (String) BlufiApp.getInstance().settingsGet(SettingsConstants.PREF_SETTINGS_KEY_BLE_PREFIX,
                 BlufiConstants.BLUFI_PREFIX);
-        mScanStartTime = SystemClock.elapsedRealtime();
 
         mLog.d("Start scan ble");
         scanner.startScan(null, new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build(),
                 mScanCallback);
-        mUpdateFuture = mThreadPool.submit(() -> {
-            while (!Thread.currentThread().isInterrupted()) {
-                try {
-                    Thread.sleep(TIMEOUT_SCAN);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                    break;
-                }
-
-                onIntervalScanUpdate();
-            }
-
-            BluetoothLeScanner inScanner = BluetoothAdapter.getDefaultAdapter().getBluetoothLeScanner();
-            if (inScanner != null) {
-                inScanner.stopScan(mScanCallback);
-            }
-            mLog.d("Scan ble thread is interrupted");
-        });
     }
 
     /**
@@ -260,9 +235,6 @@ public class MainActivity extends AppCompatActivity {
         if (scanner != null) {
             scanner.stopScan(mScanCallback);
         }
-        if (mUpdateFuture != null) {
-            mUpdateFuture.cancel(true);
-        }
         mLog.d("Stop scan ble");
     }
 
@@ -272,6 +244,11 @@ public class MainActivity extends AppCompatActivity {
         if (mRecordAdapter != null) {
             mRecordAdapter.setList(allRecord);
         }
+    }
+
+    @Subscribe
+    public void onLooperEvent(LooperEvent event) {
+        onIntervalScanUpdate();
     }
 
     /**
