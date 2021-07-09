@@ -67,6 +67,7 @@ public class SettingsActivity extends BaseActivity {
         private Preference mDataOutput;
         private Preference mDataDelete;
         private Preference mConfigureOption;
+        private Preference mDataManager;
 
         private Preference mVersionCheckPref;
         private volatile BlufiAppReleaseTask.ReleaseInfo mAppLatestRelease;
@@ -112,6 +113,8 @@ public class SettingsActivity extends BaseActivity {
 
             mConfigureOption = findPreference(R.string.settings_ble_configure_option_key);
             updateConfig();
+
+            mDataManager = findPreference(R.string.settings_ble_data_manager_key);
         }
 
         @Override
@@ -174,6 +177,9 @@ public class SettingsActivity extends BaseActivity {
                 return true;
             } else if (preference == mConfigureOption) {
                 startActivity(new Intent(getContext(), ConfigureOptionsActivity.class));
+                return true;
+            } else if (preference == mDataManager) {
+                startActivity(new Intent(getContext(), RecordManagerActivity.class));
                 return true;
             }
 

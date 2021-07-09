@@ -79,4 +79,6 @@
     <string name="settings_ble_data_delete_title">清空数据</string>
     <string name="settings_ble_configure_option_key">settings_ble_configure_option_key</string>
     <string name="settings_ble_configure_option_title">配网配置</string>
+    <string name="settings_ble_data_manager_key">settings_ble_data_manager_key</string>
+    <string name="settings_ble_data_manager_title">数据管理</string>
 </resources>

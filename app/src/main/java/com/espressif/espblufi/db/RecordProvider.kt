@@ -25,8 +25,7 @@ object RecordProvider {
         }
         val split = name.split("-")
         val mid: String = split[split.lastIndex]
-        val uid = mid.substring(0, mid.length - 2)
-        val entity = RecordEntity(System.currentTimeMillis(), uid, mid, "")
+        val entity = RecordEntity(System.currentTimeMillis(), mid, mid, "")
         addRecord(entity)
     }
 

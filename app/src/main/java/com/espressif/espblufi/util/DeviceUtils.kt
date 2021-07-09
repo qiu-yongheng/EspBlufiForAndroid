@@ -13,6 +13,9 @@ object DeviceUtils {
 
     }
 
+    /**
+     * TODO
+     */
     fun getUid(device: BluetoothDevice): String {
         val mid = getMid(device)
         return mid.substring(0, mid.length - 2)

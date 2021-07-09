@@ -293,13 +293,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void gotoDevice(BluetoothDevice device) {
-        Intent intent = new Intent(MainActivity.this, BlufiActivity.class);
-        intent.putExtra(BlufiConstants.KEY_BLE_DEVICE, device);
-        startActivityForResult(intent, REQUEST_BLUFI);
-
-        mDeviceMap.clear();
-        mBleList.clear();
-        mBleAdapter.notifyDataSetChanged();
+//        Intent intent = new Intent(MainActivity.this, BlufiActivity.class);
+//        intent.putExtra(BlufiConstants.KEY_BLE_DEVICE, device);
+//        startActivityForResult(intent, REQUEST_BLUFI);
+//
+//        mDeviceMap.clear();
+//        mBleList.clear();
+//        mBleAdapter.notifyDataSetChanged();
     }
 
     /**

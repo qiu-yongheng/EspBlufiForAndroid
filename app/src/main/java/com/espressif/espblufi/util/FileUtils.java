@@ -1,6 +1,7 @@
 package com.espressif.espblufi.util;
 
 import android.content.Context;
+import android.util.Log;
 
 import com.espressif.espblufi.db.RecordEntity;
 import com.espressif.espblufi.db.RecordProvider;
@@ -14,7 +15,8 @@ public class FileUtils {
     public static void exportExcel(Context context) {
         File file = new File(outputPath);
         if (!file.exists()) {
-            file.mkdirs();
+            boolean mkdirs = file.mkdirs();
+            log("创建文件夹" + outputPath + ": " + mkdirs);
         }
 
         String date = DateUtils.INSTANCE.formatDate(System.currentTimeMillis(), "yyyyMMdd");
@@ -31,5 +33,9 @@ public class FileUtils {
 
         ExcelUtil.initExcel(filePath, sheetName, title);
         ExcelUtil.writeObjListToExcel(list, filePath, context);
+    }
+
+    private static void log(String msg) {
+        Log.d("FileUtils", msg);
     }
 }
