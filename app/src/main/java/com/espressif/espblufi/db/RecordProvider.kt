@@ -6,7 +6,7 @@ import com.espressif.espblufi.app.BlufiApp
 object RecordProvider {
     private val dao: RecordDao by lazy { AppDataBase.instance(BlufiApp.getInstance()).recordDao() }
 
-    fun addRecord(entity: RecordEntity) {
+    private fun addRecord(entity: RecordEntity) {
         val record = dao.getRecordForUid(entity.uid)
         if (record == null) {
             dao.addRecord(entity)
@@ -18,14 +18,14 @@ object RecordProvider {
         }
     }
 
-    fun addRecord(device: BluetoothDevice) {
+    fun addRecord(device: BluetoothDevice, status: Int, msg: String) {
         val name = device.name
         if (name.isNullOrEmpty()) {
             return
         }
         val split = name.split("-")
         val mid: String = split[split.lastIndex]
-        val entity = RecordEntity(System.currentTimeMillis(), mid, mid, "")
+        val entity = RecordEntity.build(System.currentTimeMillis(), mid, mid, status, msg)
         addRecord(entity)
     }
 

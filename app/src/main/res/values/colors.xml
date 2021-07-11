@@ -7,4 +7,6 @@
     <color name="color_record_bg_white">#FFFFFFFF</color>
     <color name="color_record_bg_gray">#aaaaaaaa</color>
     <color name="color_record_title">#4CAF50</color>
+    <color name="color_green">#4CAF50</color>
+    <color name="color_red">#f53242</color>
 </resources>

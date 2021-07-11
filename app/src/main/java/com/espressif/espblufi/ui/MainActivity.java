@@ -87,6 +87,15 @@ public class MainActivity extends AppCompatActivity {
     private Map<String, ScanResult> mDeviceMap;
     private ScanCallback mScanCallback;
     private String mBlufiFilter;
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private final Runnable scanCheckTask = new Runnable() {
+        @Override
+        public void run() {
+            stopScan();
+            scan();
+        }
+    };
+    private boolean isResume = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -102,6 +111,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         mLog.d("onResume");
+        isResume = true;
         EventBus.getDefault().register(this);
         LooperManager.INSTANCE.start(2000);
         requestPermission();
@@ -112,8 +122,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         mLog.d("onPause");
+        isResume = false;
         EventBus.getDefault().unregister(this);
         LooperManager.INSTANCE.stop();
+        mBleList.clear();
+        mBleAdapter.setList(mBleList);
         stopScan();
     }
 
@@ -169,16 +182,6 @@ public class MainActivity extends AppCompatActivity {
         if (mBleAdapter != null) {
             mBleAdapter.setOnItemClickListener((adapter, view, position) -> gotoDevice(mBleAdapter.getItem(position).getDevice()));
         }
-//        if (mRecordAdapter != null) {
-//            mRecordAdapter.setOnItemClickListener((adapter, view, position) -> {
-//                RecordEntity item = mRecordAdapter.getItem(position);
-//                DialogUtils.INSTANCE.showDeleteRecordDialog(MainActivity.this, () -> {
-//                    mRecordAdapter.removeAt(position);
-//                    RecordProvider.INSTANCE.deleteRecord(item);
-//                    return null;
-//                });
-//            });
-//        }
     }
 
     private void requestPermission() {
@@ -222,8 +225,14 @@ public class MainActivity extends AppCompatActivity {
                 BlufiConstants.BLUFI_PREFIX);
 
         mLog.d("Start scan ble");
-        scanner.startScan(null, new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build(),
+        scanner.startScan(null,
+                new ScanSettings.Builder()
+                        .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+                        .build(),
                 mScanCallback);
+
+        // 超时1分钟没有设备回调, 重新扫描
+        handler.postDelayed(scanCheckTask, 60 * 1000);
     }
 
     /**
@@ -236,6 +245,15 @@ public class MainActivity extends AppCompatActivity {
             scanner.stopScan(mScanCallback);
         }
         mLog.d("Stop scan ble");
+
+        handler.removeCallbacks(scanCheckTask);
+    }
+
+    private void resetCheckTick() {
+        handler.removeCallbacks(scanCheckTask);
+        if (isResume) {
+            handler.postDelayed(scanCheckTask, 60 * 1000);
+        }
     }
 
     private void updateRecord() {
@@ -308,7 +326,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         private void onLeScan(ScanResult scanResult) {
-//            mLog.d("ID: " + scanResult.getDevice().getName() + ", mac: " + scanResult.getDevice().getAddress());
+//            Log.d("ScanResult", "ID: " + scanResult.getDevice().getName() + ", mac: " + scanResult.getDevice().getAddress());
             MainActivity activity = aty.get();
             if (activity != null) {
                 String name = scanResult.getDevice().getName();
@@ -320,6 +338,7 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 activity.mDeviceMap.put(scanResult.getDevice().getAddress(), scanResult);
+                activity.resetCheckTick();
             }
         }
     }

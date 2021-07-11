@@ -1,6 +1,7 @@
 package com.espressif.espblufi.task
 
 import android.bluetooth.*
+import android.os.SystemClock
 import android.util.Log
 import blufi.espressif.BlufiCallback
 import blufi.espressif.BlufiClient
@@ -10,6 +11,9 @@ import com.espressif.espblufi.app.BlufiApp
 import com.espressif.espblufi.constants.BlufiConstants
 import com.espressif.espblufi.constants.MorningConfig
 import com.espressif.espblufi.db.RecordProvider
+import com.espressif.espblufi.db.STATUS_FAIL
+import com.espressif.espblufi.db.STATUS_NO_WIFI_CONFIGURE
+import com.espressif.espblufi.db.STATUS_SUCCESS
 import com.espressif.espblufi.util.DeviceUtils
 import java.util.*
 import java.util.concurrent.Semaphore
@@ -19,7 +23,7 @@ class NwTask(private val device: BluetoothDevice) : Runnable {
     private var client: BlufiClient? = null
     private var configure: BlufiConfigureParams? = null
     private val semaphore = Semaphore(0)
-
+    private var isSuccess = false
     var isConnect = false
 
     override fun run() {
@@ -27,10 +31,9 @@ class NwTask(private val device: BluetoothDevice) : Runnable {
             configure = MorningConfig.getConfigure()
             if (configure == null) {
                 log("任务失败, 配网参数不存在!")
+                RecordProvider.addRecord(device, STATUS_NO_WIFI_CONFIGURE, "配网参数不存在")
                 return
             }
-
-            client?.close()
 
             // 连接
             client = BlufiClient(BlufiApp.getInstance(), device)
@@ -42,8 +45,18 @@ class NwTask(private val device: BluetoothDevice) : Runnable {
         } catch (e: Exception) {
             e.printStackTrace()
         } finally {
+            val status = if (isSuccess) STATUS_SUCCESS else STATUS_FAIL
+            val msg = if (isSuccess) "配网成功" else "配网失败"
+            RecordProvider.addRecord(device, status, msg)
+            client?.setGattCallback(null)
+            client?.setBlufiCallback(null)
+            try {
+                client?.close()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
             NwManager.removeTask(this)
-            log("任务执行完毕: ${device.name}")
+            log("任务执行完毕: ${device.name}, 结果: $msg")
         }
     }
 
@@ -69,7 +82,7 @@ class NwTask(private val device: BluetoothDevice) : Runnable {
         }
 
         override fun onMtuChanged(gatt: BluetoothGatt?, mtu: Int, status: Int) {
-            log(String.format(Locale.ENGLISH, "onMtuChanged status=%d, mtu=%d", status, mtu))
+//            log(String.format(Locale.ENGLISH, "onMtuChanged status=%d, mtu=%d", status, mtu))
             // 配网
             networking()
         }
@@ -95,7 +108,12 @@ class NwTask(private val device: BluetoothDevice) : Runnable {
 
         override fun onPostConfigureParams(client: BlufiClient?, status: Int) {
             log("参数设置结果: ${if (status == 0) "成功" else "失败"}")
-            client?.requestDeviceStatus()
+            try {
+                SystemClock.sleep(1000)
+                client?.requestDeviceStatus()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
 
         override fun onDeviceStatusResponse(
@@ -104,10 +122,8 @@ class NwTask(private val device: BluetoothDevice) : Runnable {
             response: BlufiStatusResponse?
         ) {
             log("配网结果: ${if (status == 0) "成功" else "失败"}")
-            if (status == 0) {
-                RecordProvider.addRecord(device)
-            }
-            client?.close()
+            isSuccess = status == 0
+            client?.requestCloseConnection()
         }
     }
 
@@ -115,7 +131,12 @@ class NwTask(private val device: BluetoothDevice) : Runnable {
      * 配网
      */
     private fun networking() {
-        client?.configure(configure)
+        log("设置配网参数")
+        try {
+            client?.configure(configure)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     fun getUid(): String {

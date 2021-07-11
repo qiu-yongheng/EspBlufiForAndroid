@@ -32,7 +32,7 @@ public class FileUtils {
             String excelFileName = "/Morning_" + date + "_" + time + ".xls";
 
 
-            String[] title = {"SN", "Date", "Time", "MachineID"};
+            String[] title = {"SN", "Date", "Time", "MachineID", "Status"};
             String sheetName = "morning";
 
             List<RecordEntity> list = RecordProvider.INSTANCE.getAllRecord();

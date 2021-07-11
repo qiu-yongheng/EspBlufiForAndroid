@@ -12,7 +12,7 @@ object NwManager {
     private val runningTask = ArrayList<NwTask>()
 
     fun init() {
-        executor = Executors.newFixedThreadPool(4)
+        executor = Executors.newFixedThreadPool(1)
     }
 
     private fun executor(device: BluetoothDevice) {
